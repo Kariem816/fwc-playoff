@@ -3,14 +3,51 @@ import { playoffMatches } from "./data/playoffs";
 import rawMatches from "@/assets/matches.json";
 import "./style.css";
 
+enum Fixture {
+	GS1 = 0,
+	GS2 = 1,
+	GS3 = 2,
+	R32 = 3,
+	R16 = 4,
+	QF = 5,
+	SF = 6,
+	R34 = 7,
+	F = 8,
+}
+
+function fixtureToString(fixture: Fixture): string {
+  switch (fixture) {
+    case Fixture.GS1:
+      return "Match day 1";
+    case Fixture.GS2:
+      return "Matchday 2";
+    case Fixture.GS3:
+      return "Matchday 3";
+    case Fixture.R32:
+      return "Round of 32";
+    case Fixture.R16:
+      return "Round of 16";
+    case Fixture.QF:
+      return "Quarter finals";
+    case Fixture.SF:
+      return "Semi finals";
+    case Fixture.R34:
+      return "Third Place Match";
+    case Fixture.F:
+      return "Final";
+    default:
+      throw new Error("invalid fixture");
+  }
+}
+
 class Match {
-	fixture: number;
+	fixture: Fixture;
 	group: string;
 	team1: string;
 	team2: string;
 	score: [number, number] | undefined = undefined;
 
-	constructor(fixture: number, group: string, team1: string, team2: string) {
+	constructor(fixture: Fixture, group: string, team1: string, team2: string) {
 		this.fixture = fixture;
 		this.group = group;
 		this.team1 = team1;
@@ -227,7 +264,7 @@ function fixturesScreen(app: HTMLElement, matches: Match[]) {
 	for (const match of localMatches) {
 		if (match.fixture !== lastFixture) {
 			const fixtureHeader = document.createElement("h2");
-			fixtureHeader.textContent = `Fixture ${match.fixture}`;
+			fixtureHeader.textContent = fixtureToString(match.fixture);
 			fixtureHeader.classList.add("fixture-header");
 			app.appendChild(fixtureHeader);
 
@@ -369,29 +406,34 @@ function calculatePlayoffMatches(matches: Match[]): Match[] {
 		.map((group) => ({ team: group.placeData(3), group: group.name }))
 		.sort((a, b) => sortTeams(a.team, b.team, undefined))
 		.slice(0, 8)
-    .map((t) => t.group)
-    .sort()
+		.map((t) => t.group)
+		.sort()
 		.join("");
-  console.log("thirds:", thirds);
-  const combination = combinations[thirds];
-  if (!combination) throw new Error("WTH! how combination was not found?");
+	const combination = combinations[thirds];
+	if (!combination) throw new Error("WTH! how combination was not found?");
 	const playoffsByGroupPos: GroupPosition[][] = [];
 	for (const playoff of playoffMatches) {
 		if (playoff.length === 1) {
 			const team1Pos = playoff[0];
-      const team2Idx = indexOf(team1Pos);
-      if (team2Idx < 0) {
-        throw new Error("invalid playoff match");
-      }
-      const team2Pos = combination[team2Idx];
-      if (!team2Pos) {
-        throw new Error("invalid playoff match");
-      }
-      playoffsByGroupPos.push([parseGroupPosition(team1Pos), parseGroupPosition(team2Pos)]);
+			const team2Idx = indexOf(team1Pos);
+			if (team2Idx < 0) {
+				throw new Error("invalid playoff match");
+			}
+			const team2Pos = combination[team2Idx];
+			if (!team2Pos) {
+				throw new Error("invalid playoff match");
+			}
+			playoffsByGroupPos.push([
+				parseGroupPosition(team1Pos),
+				parseGroupPosition(team2Pos),
+			]);
 		} else if (playoff.length === 2) {
 			const team1Pos = playoff[0];
 			const team2Pos = playoff[1];
-      playoffsByGroupPos.push([parseGroupPosition(team1Pos), parseGroupPosition(team2Pos)]);
+			playoffsByGroupPos.push([
+				parseGroupPosition(team1Pos),
+				parseGroupPosition(team2Pos),
+			]);
 		} else {
 			throw new Error("invalid playoff match");
 		}
@@ -402,7 +444,10 @@ function calculatePlayoffMatches(matches: Match[]): Match[] {
 		const teamPos = playoff[0];
 		const group1 = groups.find((g) => g.name === teamPos.group);
 		if (!group1) {
-      console.error("group not found for playoff team", {playoff, teamPos});
+			console.error("group not found for playoff team", {
+				playoff,
+				teamPos,
+			});
 			throw new Error("invalid group");
 		}
 		const team1 = group1.place(teamPos.position);
@@ -414,7 +459,7 @@ function calculatePlayoffMatches(matches: Match[]): Match[] {
 		}
 		const team2Name = group2.place(team2.position);
 
-		result.push(new Match(0, "", team1, team2Name));
+		result.push(new Match(Fixture.R32, "Playoffs", team1, team2Name));
 	}
 	return result;
 }
