@@ -16,28 +16,28 @@ enum Fixture {
 }
 
 function fixtureToString(fixture: Fixture): string {
-  switch (fixture) {
-    case Fixture.GS1:
-      return "Match day 1";
-    case Fixture.GS2:
-      return "Matchday 2";
-    case Fixture.GS3:
-      return "Matchday 3";
-    case Fixture.R32:
-      return "Round of 32";
-    case Fixture.R16:
-      return "Round of 16";
-    case Fixture.QF:
-      return "Quarter finals";
-    case Fixture.SF:
-      return "Semi finals";
-    case Fixture.R34:
-      return "Third Place Match";
-    case Fixture.F:
-      return "Final";
-    default:
-      throw new Error("invalid fixture");
-  }
+	switch (fixture) {
+		case Fixture.GS1:
+			return "Match day 1";
+		case Fixture.GS2:
+			return "Matchday 2";
+		case Fixture.GS3:
+			return "Matchday 3";
+		case Fixture.R32:
+			return "Round of 32";
+		case Fixture.R16:
+			return "Round of 16";
+		case Fixture.QF:
+			return "Quarter finals";
+		case Fixture.SF:
+			return "Semi finals";
+		case Fixture.R34:
+			return "Third Place Match";
+		case Fixture.F:
+			return "Final";
+		default:
+			throw new Error("invalid fixture");
+	}
 }
 
 class Match {
@@ -464,34 +464,134 @@ function calculatePlayoffMatches(matches: Match[]): Match[] {
 	return result;
 }
 
-function playoffsScreen(container: HTMLElement, matches: Match[]) {
+type Round = {
+	title: string;
+	matches: BracketMatch[];
+	start?: boolean;
+	final?: boolean;
+};
+
+type BracketMatch = {
+	team1?: string;
+	team2?: string;
+	score?: [number, number];
+};
+
+const ROUND_ORDER = [
+	Fixture.R32,
+	Fixture.R16,
+	Fixture.QF,
+	Fixture.SF,
+	Fixture.F,
+];
+
+export function playoffsScreen(container: HTMLElement, matches: Match[]) {
 	const playoffs = calculatePlayoffMatches(matches);
 
-	for (const playoff of playoffs) {
-		const matchContainer = document.createElement("div");
-		matchContainer.classList.add("playoff-match");
-		container.appendChild(matchContainer);
+	const rounds: Round[] = ROUND_ORDER.map((fixture, index) => {
+		// Real matches
+		if (fixture === Fixture.R32) {
+			return {
+				title: fixtureToString(fixture),
+				matches: playoffs.map(toBracketMatch),
+				start: true,
+			};
+		}
 
-		const team1 = playoff.team1;
-		const team2 = playoff.team2;
+		// Empty placeholder matches
+		const matchCount = Math.max(1, playoffs.length / Math.pow(2, index));
 
-		const team1Flag = document.createElement("img");
-		team1Flag.src = `/flags/${team1.toLowerCase()}.svg`;
-		team1Flag.alt = team1;
-		team1Flag.classList.add("team-flag");
-		const team2Flag = document.createElement("img");
-		team2Flag.src = `/flags/${team2.toLowerCase()}.svg`;
-		team2Flag.alt = team2;
-		team2Flag.classList.add("team-flag");
+		return {
+			title: fixtureToString(fixture),
+			final: fixture === Fixture.F,
+			matches: Array.from({ length: matchCount }, () => ({})),
+		};
+	});
 
-		const vs = document.createElement("span");
-		vs.textContent = "vs";
+	const bracket = document.createElement("div");
+	bracket.className = "bracket";
 
-		const header = document.createElement("div");
-		header.classList.add("match-header");
-		header.append(team1Flag, vs, team2Flag);
-		matchContainer.appendChild(header);
+	rounds.forEach((round, roundIndex) => {
+		bracket.appendChild(createRound(round, roundIndex));
+	});
+
+	container.appendChild(bracket);
+}
+
+function toBracketMatch(match: Match): BracketMatch {
+	return {
+		team1: match.team1,
+		team2: match.team2,
+		score: match.score,
+	};
+}
+
+function createRound(round: Round, roundIndex: number): HTMLElement {
+	const roundEl = document.createElement("section");
+	roundEl.classList.add("round");
+
+	if (round.start) {
+		roundEl.classList.add("start");
 	}
+	if (round.final) {
+		roundEl.classList.add("final");
+	}
+
+	const title = document.createElement("h2");
+	title.className = "round-title";
+	title.textContent = round.title;
+
+	const matches = document.createElement("div");
+	matches.className = "round-matches";
+
+	matches.style.setProperty("--round", String(roundIndex));
+
+	round.matches.forEach((match) => {
+		matches.appendChild(createMatch(match));
+	});
+
+	roundEl.append(title, matches);
+
+	return roundEl;
+}
+
+function createMatch(match: BracketMatch): HTMLElement {
+	const matchEl = document.createElement("div");
+	matchEl.className = "playoff-match";
+
+	matchEl.append(
+		createTeam(match.team1, match.score?.[0]),
+		createTeam(match.team2, match.score?.[1]),
+	);
+
+	return matchEl;
+}
+
+function createTeam(team?: string, score?: number): HTMLElement {
+	const teamEl = document.createElement("div");
+	teamEl.className = "team";
+
+	if (!team) {
+		teamEl.classList.add("placeholder");
+		return teamEl;
+	}
+
+	const flag = document.createElement("img");
+	flag.className = "team-flag";
+	flag.src = `/flags/${team.toLowerCase()}.svg`;
+	flag.alt = team;
+
+	teamEl.appendChild(flag);
+
+	if (score !== undefined) {
+		const scoreEl = document.createElement("span");
+		scoreEl.className = "team-score";
+		scoreEl.textContent = String(score);
+
+		teamEl.appendChild(scoreEl);
+	}
+
+	return teamEl;
 }
 
 function save(matches: Match[]) {
