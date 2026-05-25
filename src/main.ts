@@ -73,6 +73,10 @@ class Match {
 		return id;
 	}
 
+	clearSubscriptions() {
+		this.subscribtions.clear();
+	}
+
 	unsubscribe(id: number) {
 		this.subscribtions.delete(id);
 	}
@@ -143,10 +147,20 @@ class GroupTable {
 	}
 
 	private update() {
+		for (const team of this._teams) {
+			team.played = 0;
+			team.points = 0;
+			team.wins = 0;
+			team.draws = 0;
+			team.losses = 0;
+			team.goalsFor = 0;
+			team.goalsAgainst = 0;
+		}
+
 		for (const match of this.matches) {
 			const team1 = this.team(match.team1);
-			const team2 = this.team(match.team2)
-			
+			const team2 = this.team(match.team2);
+
 			if (!team1 || !team2) {
 				throw new Error("invalid match teams");
 			}
@@ -259,14 +273,25 @@ function sortTeams(
 
 		return a.name.localeCompare(b.name);
 	}
-
+	
 	const m = direct;
-
+	
 	const scoreA = m.team1 === a.name ? m.score![0] : m.score![1];
 	const scoreB = m.team1 === b.name ? m.score![0] : m.score![1];
-
+	
 	if (scoreA !== scoreB) {
 		return scoreB - scoreA;
+	}
+	
+	const gda = a.goalsFor - a.goalsAgainst;
+	const gdb = b.goalsFor - b.goalsAgainst;
+
+	if (gda !== gdb) {
+		return gdb - gda;
+	}
+	
+	if (a.goalsFor !== b.goalsFor) {
+		return b.goalsFor - a.goalsFor;
 	}
 
 	return a.name.localeCompare(b.name);
@@ -303,6 +328,12 @@ function fixturesScreen(app: HTMLElement, { matches }: Tournament) {
 	let lastGroup = "";
 
 	for (const match of localMatches) {
+		const ogMatch = matches.find(
+			(m) => m.team1 === match.team1 && m.team2 === match.team2,
+		);
+		if (!ogMatch) {
+			throw new Error("match not found");
+		}
 		if (match.fixture !== lastFixture) {
 			const fixtureHeader = document.createElement("h2");
 			fixtureHeader.textContent = fixtureToString(match.fixture);
@@ -330,17 +361,41 @@ function fixturesScreen(app: HTMLElement, { matches }: Tournament) {
 		team1.alt = match.team1;
 		team1.classList.add("team-flag");
 
+		const team1Score = document.createElement("input");
+		team1Score.value = match.score?.[0]?.toString() || "";
+		team1Score.classList.add("team-score");
+
 		const team2 = document.createElement("img");
 		team2.src = `/flags/${match.team2.toLowerCase()}.svg`;
 		team2.alt = match.team2;
 		team2.classList.add("team-flag");
+
+		const team2Score = document.createElement("input");
+		team2Score.value = match.score?.[1]?.toString() || "";
+		team2Score.classList.add("team-score");
+
+		const onScoreChange = () => {
+			const score1 = parseInt(team1Score.value, 10);
+			const score2 = parseInt(team2Score.value, 10);
+			if (isNaN(score1) || isNaN(score2)) {
+				return;
+			}
+			ogMatch.setScore(score1, score2);
+			save(matches);
+		};
+		team1Score.addEventListener("change", onScoreChange);
+		team2Score.addEventListener("change", onScoreChange);
+		ogMatch.subscribe(() => {
+			team1Score.value = ogMatch.score?.[0]?.toString() || "";
+			team2Score.value = ogMatch.score?.[1]?.toString() || "";
+		}); // let it leak
 
 		const vs = document.createElement("span");
 		vs.textContent = "vs";
 
 		const header = document.createElement("div");
 		header.classList.add("match-header");
-		header.append(team1, vs, team2);
+		header.append(team1, team1Score, vs, team2Score, team2);
 		container.appendChild(header);
 
 		app.appendChild(container);

@@ -113,15 +113,13 @@ footer {
 	object-fit: contain;
 }
 
-.match-details {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	gap: 1rem;
-
-	& > p {
-		margin: 0;
-	}
+.team-score {
+	width: 2rem;
+	height: 3rem;
+	text-align: center;
+	background-color: #202020;
+	border: 1px solid snow;
+	color: snow;
 }
 
 .groups {
