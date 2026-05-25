@@ -40,12 +40,16 @@ function fixtureToString(fixture: Fixture): string {
 	}
 }
 
+type MatchSubscriptionCb = (match: Match) => void;
+
 class Match {
 	fixture: Fixture;
 	group: string;
 	team1: string;
 	team2: string;
 	score: [number, number] | undefined = undefined;
+	private subscribtions = new Map<number, MatchSubscriptionCb>();
+	private subscriptionId = 0;
 
 	constructor(fixture: Fixture, group: string, team1: string, team2: string) {
 		this.fixture = fixture;
@@ -56,6 +60,21 @@ class Match {
 
 	setScore(score1: number, score2: number) {
 		this.score = [score1, score2];
+		this.notify();
+	}
+
+	private notify() {
+		this.subscribtions.forEach((cb) => cb(this));
+	}
+
+	subscribe(cb: MatchSubscriptionCb): number {
+		const id = this.subscriptionId++;
+		this.subscribtions.set(id, cb);
+		return id;
+	}
+
+	unsubscribe(id: number) {
+		this.subscribtions.delete(id);
 	}
 }
 
@@ -110,8 +129,27 @@ class GroupTable {
 				throw new Error("matches from different groups");
 			}
 
-			const team1 = teams[match.team1];
-			const team2 = teams[match.team2];
+			match.subscribe(() => {
+				this.update();
+			});
+		}
+
+		this.name = groupName;
+		this._teams = Object.entries(teams).map(([name, team]) => ({
+			name,
+			...team,
+		}));
+		this.update();
+	}
+
+	private update() {
+		for (const match of this.matches) {
+			const team1 = this.team(match.team1);
+			const team2 = this.team(match.team2)
+			
+			if (!team1 || !team2) {
+				throw new Error("invalid match teams");
+			}
 
 			if (match.score) {
 				team1.played++;
@@ -139,13 +177,11 @@ class GroupTable {
 				}
 			}
 		}
-
-		this.name = groupName;
-		this._teams = Object.entries(teams).map(([name, team]) => ({
-			name,
-			...team,
-		}));
 		this.sort();
+	}
+
+	private team(name: string): GroupTeamName | undefined {
+		return this._teams.find((t) => t.name === name);
 	}
 
 	private match(team1: string, team2: string): Match | undefined {
@@ -194,6 +230,11 @@ type GroupPosition = {
 };
 
 type Screen = "fixtures" | "groups" | "playoffs";
+
+type Tournament = {
+	matches: Match[];
+	groups: GroupTable[];
+};
 
 function sortTeams(
 	a: GroupTeamName,
@@ -250,7 +291,7 @@ function parseGroupPosition(str: string): GroupPosition {
 	};
 }
 
-function fixturesScreen(app: HTMLElement, matches: Match[]) {
+function fixturesScreen(app: HTMLElement, { matches }: Tournament) {
 	const localMatches = [...matches].sort((a, b) => {
 		if (a.fixture === b.fixture) {
 			return a.group.localeCompare(b.group);
@@ -306,19 +347,14 @@ function fixturesScreen(app: HTMLElement, matches: Match[]) {
 	}
 }
 
-function groupsScreen(app: HTMLElement, matches: Match[]) {
-	for (const charCode of Array.from({ length: 12 }, (_, i) => i + 65)) {
-		const group = String.fromCharCode(charCode);
-		const groupMatches = matches.filter((match) => match.group === group);
-
-		const groupTable = new GroupTable(groupMatches);
-
+function groupsScreen(app: HTMLElement, { groups }: Tournament) {
+	for (const groupTable of groups) {
 		const container = document.createElement("div");
 		container.classList.add("group-container");
 		app.appendChild(container);
 
 		const groupHeader = document.createElement("h2");
-		groupHeader.textContent = `Group ${group}`;
+		groupHeader.textContent = `Group ${groupTable.name}`;
 		groupHeader.classList.add("group-header");
 		container.appendChild(groupHeader);
 
@@ -393,15 +429,7 @@ function groupsScreen(app: HTMLElement, matches: Match[]) {
 	}
 }
 
-function calculatePlayoffMatches(matches: Match[]): Match[] {
-	const groups: GroupTable[] = [];
-	for (const charCode of Array.from({ length: 12 }, (_, i) => i + 65)) {
-		const group = String.fromCharCode(charCode);
-		const groupMatches = matches.filter((match) => match.group === group);
-
-		const groupTable = new GroupTable(groupMatches);
-		groups.push(groupTable);
-	}
+function calculatePlayoffMatches({ groups }: Tournament): Match[] {
 	const thirds = groups
 		.map((group) => ({ team: group.placeData(3), group: group.name }))
 		.sort((a, b) => sortTeams(a.team, b.team, undefined))
@@ -485,7 +513,7 @@ const ROUND_ORDER = [
 	Fixture.F,
 ];
 
-export function playoffsScreen(container: HTMLElement, matches: Match[]) {
+function playoffsScreen(container: HTMLElement, matches: Tournament) {
 	const playoffs = calculatePlayoffMatches(matches);
 
 	const rounds: Round[] = ROUND_ORDER.map((fixture, index) => {
@@ -617,14 +645,28 @@ function validateMatch(match: any): boolean {
 	return true;
 }
 
-function load(): Match[] {
+function load(): Tournament {
 	const matches = localStorage.getItem("matches");
-	if (!matches)
-		return rawMatches.map(
+	if (!matches) {
+		const matches = rawMatches.map(
 			(match) =>
 				new Match(match.fixture, match.group, match.team1, match.team2),
 		);
-	const parsed = JSON.parse(matches).map((match: any) => {
+		const groups: GroupTable[] = [];
+		for (const group of "ABCDEFGHIJKL") {
+			const groupMatches = matches.filter(
+				(match) => match.group === group,
+			);
+			const groupTable = new GroupTable(groupMatches);
+			groups.push(groupTable);
+		}
+		return {
+			matches,
+			groups,
+		};
+	}
+
+	const parsed: Match[] = JSON.parse(matches).map((match: any) => {
 		if (!validateMatch(match)) {
 			throw new Error("invalid match data");
 		}
@@ -639,24 +681,37 @@ function load(): Match[] {
 		}
 		return m;
 	});
+	const groups: GroupTable[] = [];
+	for (const group of "ABCDEFGHIJKL") {
+		const groupMatches = parsed.filter((match) => match.group === group);
+		const groupTable = new GroupTable(groupMatches);
+		groups.push(groupTable);
+	}
 
 	// TODO: verify that all matches were found. and patch missing matches from rawMatches. and remove invalid matches. and save if any changes were made.
-	return parsed;
+	return {
+		matches: parsed,
+		groups: groups,
+	};
 }
 
-function render(container: HTMLElement, matches: Match[], screen: Screen) {
+function render(
+	container: HTMLElement,
+	tournament: Tournament,
+	screen: Screen,
+) {
 	container.replaceChildren();
 	container.className = screen;
 
 	switch (screen) {
 		case "fixtures":
-			fixturesScreen(container, matches);
+			fixturesScreen(container, tournament);
 			break;
 		case "groups":
-			groupsScreen(container, matches);
+			groupsScreen(container, tournament);
 			break;
 		case "playoffs":
-			playoffsScreen(container, matches);
+			playoffsScreen(container, tournament);
 			break;
 		default:
 			throw new Error("invalid screen");
@@ -678,22 +733,22 @@ function main() {
 	const playoffs = document.getElementById("playoffs");
 	if (!fixtures || !groups || !playoffs) throw new Error("invalid html");
 
-	const matches = load();
+	const tournament = load();
 
 	fixtures.addEventListener("click", () => {
 		removeActive(fixtures, groups, playoffs);
 		fixtures.setAttribute("active", "");
-		render(app, matches, "fixtures");
+		render(app, tournament, "fixtures");
 	});
 	groups.addEventListener("click", () => {
 		removeActive(fixtures, groups, playoffs);
 		groups.setAttribute("active", "");
-		render(app, matches, "groups");
+		render(app, tournament, "groups");
 	});
 	playoffs.addEventListener("click", () => {
 		removeActive(fixtures, groups, playoffs);
 		playoffs.setAttribute("active", "");
-		render(app, matches, "playoffs");
+		render(app, tournament, "playoffs");
 	});
 
 	fixtures.click();
