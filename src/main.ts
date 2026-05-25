@@ -362,6 +362,9 @@ function fixturesScreen(app: HTMLElement, { matches }: Tournament) {
 		team1.classList.add("team-flag");
 
 		const team1Score = document.createElement("input");
+		team1Score.type = "number";
+		team1Score.inputMode = "numeric";
+		team1Score.pattern = "[0-9]*";
 		team1Score.value = match.score?.[0]?.toString() || "";
 		team1Score.classList.add("team-score");
 
@@ -372,6 +375,9 @@ function fixturesScreen(app: HTMLElement, { matches }: Tournament) {
 
 		const team2Score = document.createElement("input");
 		team2Score.value = match.score?.[1]?.toString() || "";
+		team2Score.type = "number";
+		team2Score.inputMode = "numeric";
+		team2Score.pattern = "[0-9]*";
 		team2Score.classList.add("team-score");
 
 		const onScoreChange = () => {
@@ -568,6 +574,12 @@ const ROUND_ORDER = [
 	Fixture.F,
 ];
 
+// measurements in rem
+const teamHeight = 4;
+const teamGap = 0.5;
+const baseMatchGap = 2;
+const bracketWidth = 2;
+
 function playoffsScreen(container: HTMLElement, matches: Tournament) {
 	const playoffs = calculatePlayoffMatches(matches);
 
@@ -592,7 +604,14 @@ function playoffsScreen(container: HTMLElement, matches: Tournament) {
 	});
 
 	const bracket = document.createElement("div");
-	bracket.className = "bracket";
+	bracket.classList.add("bracket");
+	bracket.style.setProperty("--team-height", `${teamHeight}rem`);
+	bracket.style.setProperty("--team-gap", `${teamGap}rem`);
+	bracket.style.setProperty("--bracket-width", `${bracketWidth}rem`);
+
+	for (let i = 0; i < rounds.length; i++) {
+		calculateMatchGap(i);
+	}
 
 	rounds.forEach((round, roundIndex) => {
 		bracket.appendChild(createRound(round, roundIndex));
@@ -607,6 +626,31 @@ function toBracketMatch(match: Match): BracketMatch {
 		team2: match.team2,
 		score: match.score,
 	};
+}
+
+const matchGapCache = new Map<number, number>();
+function calculateMatchGap(roundIndex: number): number {
+	if (roundIndex === 0) return baseMatchGap;
+	if (matchGapCache.has(roundIndex)) {
+		return matchGapCache.get(roundIndex)!;
+	}
+	const prevMatchGap = calculateMatchGap(roundIndex - 1);
+	const matchGap = 2*prevMatchGap+2*teamHeight+teamGap;
+	matchGapCache.set(roundIndex, matchGap);
+	return matchGap;
+}
+
+function calculateRoundOffset(roundIndex: number): number {
+	if (roundIndex === 0) return 0;
+	const prevRoundOffset = calculateRoundOffset(roundIndex - 1);
+	const prevMatchGap = calculateMatchGap(roundIndex - 1);
+	return prevRoundOffset + 0.5*prevMatchGap + teamHeight + 0.5*teamGap;
+}
+
+function calculateBracketBackHeight(roundIndex: number): number {
+	if (roundIndex === 0) return 0;
+	const prevMatchGap = calculateMatchGap(roundIndex - 1);
+	return 0.5*teamHeight + 0.5*prevMatchGap;
 }
 
 function createRound(round: Round, roundIndex: number): HTMLElement {
@@ -627,7 +671,10 @@ function createRound(round: Round, roundIndex: number): HTMLElement {
 	const matches = document.createElement("div");
 	matches.className = "round-matches";
 
-	matches.style.setProperty("--round", String(roundIndex));
+	console.log("Calculating measurements for round index:", roundIndex);
+	matches.style.setProperty("--match-gap", `${calculateMatchGap(roundIndex)}rem`);
+	matches.style.setProperty("--round-offset", `${calculateRoundOffset(roundIndex)}rem`);
+	matches.style.setProperty("--bracket-back-height", `${calculateBracketBackHeight(roundIndex)}rem`);
 
 	round.matches.forEach((match) => {
 		matches.appendChild(createMatch(match));

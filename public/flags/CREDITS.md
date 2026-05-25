@@ -1,1 +1,1 @@
-https://github.com/hampusborgos/country-flags
+https://github.com/lipis/flag-icons
