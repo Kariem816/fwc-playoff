@@ -1,4 +1,6 @@
-export const combinations: Record<string, string[]> = {
+import type { R32Team } from "./matches";
+
+export const combinations: Record<string, R32Team[]> = {
 	EFGHIJKL: ["3E", "3J", "3I", "3F", "3H", "3G", "3L", "3K"],
 	DFGHIJKL: ["3H", "3G", "3I", "3D", "3J", "3F", "3L", "3K"],
 	DEGHIJKL: ["3E", "3J", "3I", "3D", "3H", "3G", "3L", "3K"],
