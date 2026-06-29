@@ -13,14 +13,19 @@ import {
 	type RawMatch,
 } from "./data/matches";
 
-type MatchSubscriptionCb = (match: Match) => void;
+const tournament: Tournament = {
+	matches: [],
+	groups: [],
+};
+
+let app = document.getElementById("app");
+if (!app) throw new Error("invalid html");
 
 class Match {
 	private data: RawMatch;
 	score: [number, number] | undefined = undefined;
 	penalties: [number, number] | undefined = undefined;
-	private subscribtions = new Map<number, MatchSubscriptionCb>();
-	private subscriptionId = 0;
+	private notifyActive = false;
 
 	constructor(data: RawMatch) {
 		this.data = { ...data };
@@ -32,9 +37,16 @@ class Match {
 	}
 
 	setPenalties(score1: number, score2: number) {
-		if (this.data.fixture < Fixture.R32) return;
+		if (!this.shouldHavePenalties()) return;
 		this.penalties = [score1, score2];
 		this.notify();
+	}
+
+	shouldHavePenalties() {
+		if (this.data.fixture < Fixture.R32) return false;
+		if (!this.score) return false;
+		if (this.score[0] !== this.score[1]) return false;
+		return true;
 	}
 
 	get id() {
@@ -140,22 +152,13 @@ class Match {
 		this.data.teams = [team1, team2];
 	}
 
+	public setNotifyActive() {
+		this.notifyActive = true;
+	}
+
 	private notify() {
-		this.subscribtions.forEach((cb) => cb(this));
-	}
-
-	subscribe(cb: MatchSubscriptionCb): number {
-		const id = this.subscriptionId++;
-		this.subscribtions.set(id, cb);
-		return id;
-	}
-
-	clearSubscriptions() {
-		this.subscribtions.clear();
-	}
-
-	unsubscribe(id: number) {
-		this.subscribtions.delete(id);
+		if (!this.notifyActive) return;
+		updateTournament(tournament, this.data.fixture);
 	}
 }
 
@@ -210,10 +213,6 @@ class GroupTable {
 			} else if (groupName !== match.group) {
 				throw new Error("matches from different groups");
 			}
-
-			match.subscribe(() => {
-				this.update();
-			});
 		}
 
 		this.name = groupName;
@@ -224,7 +223,7 @@ class GroupTable {
 		this.update();
 	}
 
-	private update() {
+	public update() {
 		for (const team of this._teams) {
 			team.played = 0;
 			team.points = 0;
@@ -345,6 +344,20 @@ type Tournament = {
 	groups: GroupTable[];
 };
 
+let currentScreen: Screen = "matches";
+
+function updateTournament(
+	tournament: Tournament,
+	updatedMatchFixture: Fixture,
+) {
+	save(tournament.matches);
+	if (updatedMatchFixture < Fixture.R32) {
+		tournament.groups.forEach((g) => g.update());
+	}
+	calculatePlayoffMatches();
+	render();
+}
+
 function sortTeams(
 	a: GroupTeamId,
 	b: GroupTeamId,
@@ -400,7 +413,7 @@ function parseGroupPosition(str: R32Team): GroupPosition {
 	};
 }
 
-function matchesScreen(app: HTMLElement, tournament: Tournament) {
+function matchesScreen(app: HTMLElement) {
 	const matches = tournament.matches;
 	const localMatches = [...matches].sort((a, b) => {
 		if (a.fixture === b.fixture) {
@@ -464,6 +477,7 @@ function matchesScreen(app: HTMLElement, tournament: Tournament) {
 		score1El.pattern = "[0-9]*";
 		score1El.value = match.score?.[0]?.toString() || "";
 		score1El.classList.add("team-score");
+		score1El.id = `score-${match.id}-1`;
 
 		const score2El = document.createElement("input");
 		score2El.value = match.score?.[1]?.toString() || "";
@@ -471,6 +485,7 @@ function matchesScreen(app: HTMLElement, tournament: Tournament) {
 		score2El.inputMode = "numeric";
 		score2El.pattern = "[0-9]*";
 		score2El.classList.add("team-score");
+		score2El.id = `score-${match.id}-2`;
 
 		const onScoreChange = () => {
 			const score1 = parseInt(score1El.value, 10);
@@ -479,31 +494,57 @@ function matchesScreen(app: HTMLElement, tournament: Tournament) {
 				return;
 			}
 			ogMatch.setScore(score1, score2);
-			save(matches);
 		};
 		score1El.addEventListener("change", onScoreChange);
 		score2El.addEventListener("change", onScoreChange);
-		if (ogMatch.fixture > Fixture.GS3) {
-			ogMatch.subscribe(() => {
-				calculatePlayoffMatches(tournament);
-			}); // let it leak
-		}
 
 		const vs = document.createElement("span");
 		vs.textContent = "vs";
-
-		// TODO: add btn to reset score
-
+		
 		const header = document.createElement("div");
 		header.classList.add("match-header");
-		header.append(label1, flag1, score1El, vs, score2El, flag2, label2);
+		
+		if (match.shouldHavePenalties()) {
+			const pins1El = document.createElement("input");
+			pins1El.type = "number";
+			pins1El.inputMode = "numeric";
+			pins1El.pattern = "[0-9]*";
+			pins1El.value = match.penalties?.[0]?.toString() || "";
+			pins1El.classList.add("team-score", "pins", "hidden");
+			pins1El.id = `pins-${match.id}-1`;
+
+			const pins2El = document.createElement("input");
+			pins2El.type = "number";
+			pins2El.inputMode = "numeric";
+			pins2El.pattern = "[0-9]*";
+			pins2El.value = match.penalties?.[1]?.toString() || "";
+			pins2El.classList.add("team-score", "pins", "hidden");
+			pins2El.id = `pins-${match.id}-2`;
+
+			const onPinsChange = () => {
+				const pins1 = parseInt(pins1El.value, 10);
+				const pins2 = parseInt(pins2El.value, 10);
+				if (isNaN(pins1) || isNaN(pins2)) {
+					return;
+				}
+				match.setPenalties(pins1, pins2);
+			};
+			pins1El.addEventListener("change", onPinsChange);
+			pins2El.addEventListener("change", onPinsChange);
+			header.append(label1, flag1, score1El, pins1El, vs, pins2El, score2El, flag2, label2);
+		} else {
+			header.append(label1, flag1, score1El, vs, score2El, flag2, label2);
+		}
+
+		// TODO: add btn to reset score
 		container.appendChild(header);
 
 		app.appendChild(container);
 	}
 }
 
-function groupsScreen(app: HTMLElement, { groups }: Tournament) {
+function groupsScreen(app: HTMLElement) {
+	const groups = tournament.groups;
 	for (const groupTable of groups) {
 		const container = document.createElement("div");
 		container.classList.add("group-container");
@@ -632,7 +673,8 @@ function parseOpponent(opp: PlayoffTeam): Opponent {
 	};
 }
 
-function calculatePlayoffMatches({ matches, groups }: Tournament) {
+function calculatePlayoffMatches() {
+	const { matches, groups } = tournament;
 	groups.forEach((g) => g.setThird(false));
 	const thirds = groups
 		.map((group) => ({
@@ -724,6 +766,7 @@ const ROUND_ORDER = [
 	Fixture.R16,
 	Fixture.QF,
 	Fixture.SF,
+	Fixture.R34,
 	Fixture.F,
 ];
 
@@ -733,10 +776,11 @@ const teamGap = 0.5;
 const baseMatchGap = 2;
 const bracketWidth = 2;
 
-function playoffsScreen(container: HTMLElement, tournament: Tournament) {
-	calculatePlayoffMatches(tournament);
-
-	const rounds: Round[] = ROUND_ORDER.map((fixture) => {
+function playoffsScreen(container: HTMLElement) {
+	// TODO: render R34 match
+	const rounds: Round[] = ROUND_ORDER.filter(
+		(fixture) => fixture !== Fixture.R34,
+	).map((fixture) => {
 		return {
 			title: fixtureToString(fixture),
 			matches: tournament.matches.filter((m) => m.fixture === fixture),
@@ -831,18 +875,76 @@ function createMatch(match: Match): HTMLElement {
 	const matchEl = document.createElement("div");
 	matchEl.className = "playoff-match";
 
-	matchEl.append(
-		createTeam(match.team1, match.score?.[0], match.penalties?.[0]),
-		createTeam(match.team2, match.score?.[1], match.penalties?.[1]),
-	);
+	const team1El = createTeam(match.team1);
+	const team2El = createTeam(match.team2);
+
+	const score1El = document.createElement("input");
+	score1El.type = "number";
+	score1El.inputMode = "numeric";
+	score1El.pattern = "[0-9]*";
+	score1El.value = match.score?.[0]?.toString() || "";
+	score1El.classList.add("team-score");
+	score1El.id = `score-${match.id}-1`;
+	team1El.appendChild(score1El);
+
+	const score2El = document.createElement("input");
+	score2El.value = match.score?.[1]?.toString() || "";
+	score2El.type = "number";
+	score2El.inputMode = "numeric";
+	score2El.pattern = "[0-9]*";
+	score2El.classList.add("team-score");
+	score2El.id = `score-${match.id}-2`;
+	team2El.appendChild(score2El);
+
+	const onScoreChange = () => {
+		const score1 = parseInt(score1El.value, 10);
+		const score2 = parseInt(score2El.value, 10);
+		if (isNaN(score1) || isNaN(score2)) {
+			return;
+		}
+		match.setScore(score1, score2);
+	};
+	score1El.addEventListener("change", onScoreChange);
+	score2El.addEventListener("change", onScoreChange);
+
+	if (match.shouldHavePenalties()) {
+		const pins1El = document.createElement("input");
+		pins1El.type = "number";
+		pins1El.inputMode = "numeric";
+		pins1El.pattern = "[0-9]*";
+		pins1El.value = match.penalties?.[0]?.toString() || "";
+		pins1El.classList.add("team-score", "pins", "hidden");
+		pins1El.id = `pins-${match.id}-1`;
+		team1El.appendChild(pins1El);
+
+		const pins2El = document.createElement("input");
+		pins2El.type = "number";
+		pins2El.inputMode = "numeric";
+		pins2El.pattern = "[0-9]*";
+		pins2El.value = match.penalties?.[1]?.toString() || "";
+		pins2El.classList.add("team-score", "pins", "hidden");
+		pins2El.id = `pins-${match.id}-2`;
+		team2El.appendChild(pins2El);
+
+		const onPinsChange = () => {
+			const pins1 = parseInt(pins1El.value, 10);
+			const pins2 = parseInt(pins2El.value, 10);
+			if (isNaN(pins1) || isNaN(pins2)) {
+				return;
+			}
+			match.setPenalties(pins1, pins2);
+		};
+		pins1El.addEventListener("change", onPinsChange);
+		pins2El.addEventListener("change", onPinsChange);
+	}
+
+	matchEl.append(team1El, team2El);
 
 	return matchEl;
 }
 
 function createTeam(
 	team?: (typeof teamData)[keyof typeof teamData],
-	score?: number,
-	pens?: number,
 ): HTMLElement {
 	const teamEl = document.createElement("div");
 	teamEl.className = "team";
@@ -862,14 +964,6 @@ function createTeam(
 	flag.src = team.flag;
 	flag.alt = team.name;
 	teamEl.appendChild(flag);
-
-	if (score !== undefined) {
-		const scoreEl = document.createElement("span");
-		scoreEl.className = "team-score";
-		scoreEl.textContent = String(score);
-		if (pens) scoreEl.textContent += ` (${pens})`;
-		teamEl.appendChild(scoreEl);
-	}
 
 	return teamEl;
 }
@@ -899,21 +993,22 @@ function validateResult(res: any): res is MatchResult {
 	);
 }
 
-function load(): Tournament {
-	const matches = DefaultMatches.map((match) => new Match(match));
-	const groups: GroupTable[] = [];
+function load() {
+	DefaultMatches.forEach((match) => {
+		tournament.matches.push(new Match(match));
+	});
+
 	for (const group of GROUPS) {
-		const groupMatches = matches.filter((match) => match.group === group);
+		const groupMatches = tournament.matches.filter(
+			(match) => match.group === group,
+		);
 		const groupTable = new GroupTable(groupMatches);
-		groups.push(groupTable);
+		tournament.groups.push(groupTable);
 	}
 
 	const rawResults = localStorage.getItem("results");
 	if (!rawResults) {
-		return {
-			matches,
-			groups,
-		};
+		return;
 	}
 
 	let results: MatchResult[] = [];
@@ -930,84 +1025,77 @@ function load(): Tournament {
 		results = parsed;
 	} catch (e) {
 		console.error("error parsing results from localStorage", e);
-		return {
-			matches,
-			groups,
-		};
+		return;
 	}
 	for (const result of results) {
-		const match = matches.find((m) => m.id === result.id);
+		const match = tournament.matches.find((m) => m.id === result.id);
 		if (!match) {
 			console.error("match not found for result", result);
 			continue;
 		}
 		match.setScore(result.score[0], result.score[1]);
 	}
-
-	calculatePlayoffMatches({ matches, groups });
-
-	return {
-		matches,
-		groups,
-	};
 }
 
-function render(
-	container: HTMLElement,
-	tournament: Tournament,
-	screen: Screen,
-) {
-	container.replaceChildren();
-	container.className = screen;
+function render() {
+	const container = app!;
 
-	switch (screen) {
+	container.replaceChildren();
+	container.className = currentScreen;
+
+	switch (currentScreen) {
 		case "matches":
-			matchesScreen(container, tournament);
+			matchesScreen(container);
 			break;
 		case "groups":
-			groupsScreen(container, tournament);
+			groupsScreen(container);
 			break;
 		case "playoffs":
-			playoffsScreen(container, tournament);
+			playoffsScreen(container);
 			break;
 		default:
 			throw new Error("invalid screen");
 	}
 }
 
-function removeActive(...elements: HTMLElement[]) {
-	for (const element of elements) {
-		element.classList.remove("active");
-	}
+function createSetActiveHandler(...btns: HTMLElement[]) {
+	return (event: Event) => {
+		const target = event.currentTarget as HTMLElement;
+		for (const btn of btns) {
+			btn.classList.remove("active");
+		}
+		target.classList.add("active");
+	};
 }
 
 function main() {
-	const app = document.getElementById("app");
-	if (!app) throw new Error("invalid html");
-
 	const matches = document.getElementById("matches");
 	const groups = document.getElementById("groups");
 	const playoffs = document.getElementById("playoffs");
 	if (!matches || !groups || !playoffs) throw new Error("invalid html");
 
-	const tournament = load();
+	load();
+	tournament.matches.forEach((match) => match.setNotifyActive());
+	updateTournament(tournament, Fixture.GS1);
 
-	matches.addEventListener("click", () => {
-		removeActive(matches, groups);
-		matches.setAttribute("active", "");
-		render(app, tournament, "matches");
+	const setActiveHandler = createSetActiveHandler(matches, groups, playoffs);
+
+	matches.addEventListener("click", (e) => {
+		setActiveHandler(e);
+		currentScreen = "matches";
+		render();
 		scrollTo({ top: 0, left: 0, behavior: "smooth" });
 	});
-	groups.addEventListener("click", () => {
-		removeActive(matches, groups);
-		groups.setAttribute("active", "");
-		render(app, tournament, "groups");
+	groups.addEventListener("click", (e) => {
+		setActiveHandler(e);
+		currentScreen = "groups";
+		render();
 		scrollTo({ top: 0, left: 0, behavior: "smooth" });
 	});
-	playoffs.addEventListener("click", () => {
-		removeActive(matches, groups);
-		playoffs.setAttribute("active", "");
-		render(app, tournament, "playoffs");
+	playoffs.addEventListener("click", (e) => {
+		setActiveHandler(e);
+		currentScreen = "playoffs";
+		render();
 		scrollTo({ top: 0, left: 0, behavior: "smooth" });
 	});
 

@@ -144,6 +144,10 @@ footer {
 	background-color: #202020;
 	border: 1px solid snow;
 	color: snow;
+
+	&.pins {
+		scale: 0.75;
+	}
 }
 
 .team-score::-webkit-outer-spin-button,
@@ -153,7 +157,7 @@ footer {
 }
 
 .team-score[type="number"] {
-	-moz-appearance: textfield;
+	appearance: textfield;
 }
 
 .groups {
