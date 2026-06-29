@@ -145,7 +145,7 @@ footer {
 	border: 1px solid snow;
 	color: snow;
 
-	&.pins {
+	&.pens {
 		scale: 0.75;
 	}
 }

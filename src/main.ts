@@ -97,6 +97,7 @@ class Match {
 		return {
 			id: this.data.id,
 			score: this.score,
+			pens: this.penalties,
 		};
 	}
 
@@ -510,39 +511,39 @@ function matchesScreen(app: HTMLElement) {
 		header.classList.add("match-header");
 
 		if (match.shouldHavePenalties()) {
-			const pins1El = document.createElement("input");
-			pins1El.type = "number";
-			pins1El.inputMode = "numeric";
-			pins1El.pattern = "[0-9]*";
-			pins1El.value = match.penalties?.[0]?.toString() || "";
-			pins1El.classList.add("team-score", "pins", "hidden");
-			pins1El.id = `pins-${match.id}-1`;
+			const pens1El = document.createElement("input");
+			pens1El.type = "number";
+			pens1El.inputMode = "numeric";
+			pens1El.pattern = "[0-9]*";
+			pens1El.value = match.penalties?.[0]?.toString() || "";
+			pens1El.classList.add("team-score", "pens", "hidden");
+			pens1El.id = `pens-${match.id}-1`;
 
-			const pins2El = document.createElement("input");
-			pins2El.type = "number";
-			pins2El.inputMode = "numeric";
-			pins2El.pattern = "[0-9]*";
-			pins2El.value = match.penalties?.[1]?.toString() || "";
-			pins2El.classList.add("team-score", "pins", "hidden");
-			pins2El.id = `pins-${match.id}-2`;
+			const pens2El = document.createElement("input");
+			pens2El.type = "number";
+			pens2El.inputMode = "numeric";
+			pens2El.pattern = "[0-9]*";
+			pens2El.value = match.penalties?.[1]?.toString() || "";
+			pens2El.classList.add("team-score", "pens", "hidden");
+			pens2El.id = `pens-${match.id}-2`;
 
-			const onPinsChange = () => {
-				const pins1 = parseInt(pins1El.value, 10);
-				const pins2 = parseInt(pins2El.value, 10);
-				if (isNaN(pins1) || isNaN(pins2)) {
+			const onpensChange = () => {
+				const pens1 = parseInt(pens1El.value, 10);
+				const pens2 = parseInt(pens2El.value, 10);
+				if (isNaN(pens1) || isNaN(pens2)) {
 					return;
 				}
-				match.setPenalties(pins1, pins2);
+				match.setPenalties(pens1, pens2);
 			};
-			pins1El.addEventListener("change", onPinsChange);
-			pins2El.addEventListener("change", onPinsChange);
+			pens1El.addEventListener("change", onpensChange);
+			pens2El.addEventListener("change", onpensChange);
 			header.append(
 				label1,
 				flag1,
 				score1El,
-				pins1El,
+				pens1El,
 				vs,
-				pins2El,
+				pens2El,
 				score2El,
 				flag2,
 				label2,
@@ -929,34 +930,34 @@ function createMatch(match: Match): HTMLElement {
 	score2El.addEventListener("change", onScoreChange);
 
 	if (match.shouldHavePenalties()) {
-		const pins1El = document.createElement("input");
-		pins1El.type = "number";
-		pins1El.inputMode = "numeric";
-		pins1El.pattern = "[0-9]*";
-		pins1El.value = match.penalties?.[0]?.toString() || "";
-		pins1El.classList.add("team-score", "pins", "hidden");
-		pins1El.id = `pins-${match.id}-1`;
-		team1El.appendChild(pins1El);
+		const pens1El = document.createElement("input");
+		pens1El.type = "number";
+		pens1El.inputMode = "numeric";
+		pens1El.pattern = "[0-9]*";
+		pens1El.value = match.penalties?.[0]?.toString() || "";
+		pens1El.classList.add("team-score", "pens", "hidden");
+		pens1El.id = `pens-${match.id}-1`;
+		team1El.appendChild(pens1El);
 
-		const pins2El = document.createElement("input");
-		pins2El.type = "number";
-		pins2El.inputMode = "numeric";
-		pins2El.pattern = "[0-9]*";
-		pins2El.value = match.penalties?.[1]?.toString() || "";
-		pins2El.classList.add("team-score", "pins", "hidden");
-		pins2El.id = `pins-${match.id}-2`;
-		team2El.appendChild(pins2El);
+		const pens2El = document.createElement("input");
+		pens2El.type = "number";
+		pens2El.inputMode = "numeric";
+		pens2El.pattern = "[0-9]*";
+		pens2El.value = match.penalties?.[1]?.toString() || "";
+		pens2El.classList.add("team-score", "pens", "hidden");
+		pens2El.id = `pens-${match.id}-2`;
+		team2El.appendChild(pens2El);
 
-		const onPinsChange = () => {
-			const pins1 = parseInt(pins1El.value, 10);
-			const pins2 = parseInt(pins2El.value, 10);
-			if (isNaN(pins1) || isNaN(pins2)) {
+		const onpensChange = () => {
+			const pens1 = parseInt(pens1El.value, 10);
+			const pens2 = parseInt(pens2El.value, 10);
+			if (isNaN(pens1) || isNaN(pens2)) {
 				return;
 			}
-			match.setPenalties(pins1, pins2);
+			match.setPenalties(pens1, pens2);
 		};
-		pins1El.addEventListener("change", onPinsChange);
-		pins2El.addEventListener("change", onPinsChange);
+		pens1El.addEventListener("change", onpensChange);
+		pens2El.addEventListener("change", onpensChange);
 	}
 
 	matchEl.append(team1El, team2El);
@@ -1001,10 +1002,11 @@ function save(matches: Match[]) {
 type MatchResult = {
 	id: number;
 	score: [number, number];
+	pens?: [number, number];
 };
 
 function validateResult(res: any): res is MatchResult {
-	return (
+	const valid =  (
 		typeof res.id === "number" &&
 		typeof res.score === "object" &&
 		Array.isArray(res.score) &&
@@ -1012,6 +1014,19 @@ function validateResult(res: any): res is MatchResult {
 		typeof res.score[0] === "number" &&
 		typeof res.score[1] === "number"
 	);
+	if (!valid) return false;
+	if (res.pens) {
+		if (
+			typeof res.pens !== "object" ||
+			!Array.isArray(res.pens) ||
+			res.pens.length !== 2 ||
+			typeof res.pens[0] !== "number" ||
+			typeof res.pens[1] !== "number"
+		) {
+			return false;
+		}
+	}
+	return true;
 }
 
 function load() {
@@ -1055,6 +1070,9 @@ function load() {
 			continue;
 		}
 		match.setScore(result.score[0], result.score[1]);
+		if (result.pens) {
+			match.setPenalties(result.pens[0], result.pens[1]);
+		}
 	}
 }
 
