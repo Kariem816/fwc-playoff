@@ -487,6 +487,11 @@ function matchesScreen(app: HTMLElement) {
 		score2El.classList.add("team-score");
 		score2El.id = `score-${match.id}-2`;
 
+		if (team1.id === "TBD" || team2.id === "TBD") {
+			score1El.disabled = true;
+			score2El.disabled = true;
+		}
+
 		const onScoreChange = () => {
 			const score1 = parseInt(score1El.value, 10);
 			const score2 = parseInt(score2El.value, 10);
@@ -500,10 +505,10 @@ function matchesScreen(app: HTMLElement) {
 
 		const vs = document.createElement("span");
 		vs.textContent = "vs";
-		
+
 		const header = document.createElement("div");
 		header.classList.add("match-header");
-		
+
 		if (match.shouldHavePenalties()) {
 			const pins1El = document.createElement("input");
 			pins1El.type = "number";
@@ -531,7 +536,17 @@ function matchesScreen(app: HTMLElement) {
 			};
 			pins1El.addEventListener("change", onPinsChange);
 			pins2El.addEventListener("change", onPinsChange);
-			header.append(label1, flag1, score1El, pins1El, vs, pins2El, score2El, flag2, label2);
+			header.append(
+				label1,
+				flag1,
+				score1El,
+				pins1El,
+				vs,
+				pins2El,
+				score2El,
+				flag2,
+				label2,
+			);
 		} else {
 			header.append(label1, flag1, score1El, vs, score2El, flag2, label2);
 		}
@@ -894,6 +909,12 @@ function createMatch(match: Match): HTMLElement {
 	score2El.pattern = "[0-9]*";
 	score2El.classList.add("team-score");
 	score2El.id = `score-${match.id}-2`;
+
+	if (match.team1.id === "TBD" || match.team2.id === "TBD") {
+		score1El.disabled = true;
+		score2El.disabled = true;
+	}
+
 	team2El.appendChild(score2El);
 
 	const onScoreChange = () => {
