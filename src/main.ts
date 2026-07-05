@@ -359,6 +359,10 @@ function updateTournament(
 	render();
 }
 
+function getFlagUrl(flag: string) {
+	return `${import.meta.env.BASE_URL}${flag}`;
+}
+
 function sortTeams(
 	a: GroupTeamId,
 	b: GroupTeamId,
@@ -463,12 +467,12 @@ function matchesScreen(app: HTMLElement) {
 		label2.classList.add("team-label");
 
 		const flag1 = document.createElement("img");
-		flag1.src = team1.flag;
+		flag1.src = getFlagUrl(team1.flag);
 		flag1.alt = team1.name;
 		flag1.classList.add("team-flag");
 
 		const flag2 = document.createElement("img");
-		flag2.src = team2.flag;
+		flag2.src = getFlagUrl(team2.flag);
 		flag2.alt = team2.name;
 		flag2.classList.add("team-flag");
 
@@ -617,7 +621,7 @@ function groupsScreen(app: HTMLElement) {
 			teamInfo.classList.add("team-info");
 
 			const teamFlag = document.createElement("img");
-			teamFlag.src = teamDatum.flag;
+			teamFlag.src = getFlagUrl(teamDatum.flag);
 			teamFlag.alt = teamDatum.name;
 			teamFlag.classList.add("team-flag");
 			teamInfo.appendChild(teamFlag);
@@ -983,7 +987,7 @@ function createTeam(
 
 	const flag = document.createElement("img");
 	flag.className = "team-flag";
-	flag.src = team.flag;
+	flag.src = getFlagUrl(team.flag);
 	flag.alt = team.name;
 	teamEl.appendChild(flag);
 

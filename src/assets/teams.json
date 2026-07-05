@@ -2,246 +2,246 @@
     "AR": {
         "id": "AR",
         "name": "Argentina",
-        "flag": "/flags/ar.svg"
+        "flag": "flags/ar.svg"
     },
     "AT": {
         "id": "AT",
         "name": "Austria",
-        "flag": "/flags/at.svg"
+        "flag": "flags/at.svg"
     },
     "AU": {
         "id": "AU",
         "name": "Australia",
-        "flag": "/flags/au.svg"
+        "flag": "flags/au.svg"
     },
     "BA": {
         "id": "BA",
         "name": "Bosnia and Herzegovina",
-        "flag": "/flags/ba.svg"
+        "flag": "flags/ba.svg"
     },
     "BE": {
         "id": "BE",
         "name": "Belgium",
-        "flag": "/flags/be.svg"
+        "flag": "flags/be.svg"
     },
     "BR": {
         "id": "BR",
         "name": "Brazil",
-        "flag": "/flags/br.svg"
+        "flag": "flags/br.svg"
     },
     "CA": {
         "id": "CA",
         "name": "Canada",
-        "flag": "/flags/ca.svg"
+        "flag": "flags/ca.svg"
     },
     "CD": {
         "id": "CD",
         "name": "Congo DR",
-        "flag": "/flags/cd.svg"
+        "flag": "flags/cd.svg"
     },
     "CH": {
         "id": "CH",
         "name": "Switzerland",
-        "flag": "/flags/ch.svg"
+        "flag": "flags/ch.svg"
     },
     "CI": {
         "id": "CI",
         "name": "Ivory Coast",
-        "flag": "/flags/ci.svg"
+        "flag": "flags/ci.svg"
     },
     "CO": {
         "id": "CO",
         "name": "Colombia",
-        "flag": "/flags/co.svg"
+        "flag": "flags/co.svg"
     },
     "CV": {
         "id": "CV",
         "name": "Cape Verde",
-        "flag": "/flags/cv.svg"
+        "flag": "flags/cv.svg"
     },
     "CW": {
         "id": "CW",
         "name": "Curaçao",
-        "flag": "/flags/cw.svg"
+        "flag": "flags/cw.svg"
     },
     "CZ": {
         "id": "CZ",
         "name": "Czech Republic",
-        "flag": "/flags/cz.svg"
+        "flag": "flags/cz.svg"
     },
     "DE": {
         "id": "DE",
         "name": "Germany",
-        "flag": "/flags/de.svg"
+        "flag": "flags/de.svg"
     },
     "DZ": {
         "id": "DZ",
         "name": "Algeria",
-        "flag": "/flags/dz.svg"
+        "flag": "flags/dz.svg"
     },
     "EC": {
         "id": "EC",
         "name": "Ecuador",
-        "flag": "/flags/ec.svg"
+        "flag": "flags/ec.svg"
     },
     "EG": {
         "id": "EG",
         "name": "Egypt",
-        "flag": "/flags/eg.svg"
+        "flag": "flags/eg.svg"
     },
     "ES": {
         "id": "ES",
         "name": "Spain",
-        "flag": "/flags/es.svg"
+        "flag": "flags/es.svg"
     },
     "FR": {
         "id": "FR",
         "name": "France",
-        "flag": "/flags/fr.svg"
+        "flag": "flags/fr.svg"
     },
     "GB-ENG": {
         "id": "GB-ENG",
         "name": "England",
-        "flag": "/flags/gb-eng.svg"
+        "flag": "flags/gb-eng.svg"
     },
     "GB-SCT": {
         "id": "GB-SCT",
         "name": "Scotland",
-        "flag": "/flags/gb-sct.svg"
+        "flag": "flags/gb-sct.svg"
     },
     "GH": {
         "id": "GH",
         "name": "Ghana",
-        "flag": "/flags/gh.svg"
+        "flag": "flags/gh.svg"
     },
     "HR": {
         "id": "HR",
         "name": "Croatia",
-        "flag": "/flags/hr.svg"
+        "flag": "flags/hr.svg"
     },
     "HT": {
         "id": "HT",
         "name": "Haiti",
-        "flag": "/flags/ht.svg"
+        "flag": "flags/ht.svg"
     },
     "IQ": {
         "id": "IQ",
         "name": "Iraq",
-        "flag": "/flags/iq.svg"
+        "flag": "flags/iq.svg"
     },
     "IR": {
         "id": "IR",
         "name": "Iran",
-        "flag": "/flags/ir.svg"
+        "flag": "flags/ir.svg"
     },
     "JO": {
         "id": "JO",
         "name": "Jordan",
-        "flag": "/flags/jo.svg"
+        "flag": "flags/jo.svg"
     },
     "JP": {
         "id": "JP",
         "name": "Japan",
-        "flag": "/flags/jp.svg"
+        "flag": "flags/jp.svg"
     },
     "KR": {
         "id": "KR",
         "name": "South Korea",
-        "flag": "/flags/kr.svg"
+        "flag": "flags/kr.svg"
     },
     "MA": {
         "id": "MA",
         "name": "Morocco",
-        "flag": "/flags/ma.svg"
+        "flag": "flags/ma.svg"
     },
     "MX": {
         "id": "MX",
         "name": "Mexico",
-        "flag": "/flags/mx.svg"
+        "flag": "flags/mx.svg"
     },
     "NL": {
         "id": "NL",
         "name": "Netherlands",
-        "flag": "/flags/nl.svg"
+        "flag": "flags/nl.svg"
     },
     "NO": {
         "id": "NO",
         "name": "Norway",
-        "flag": "/flags/no.svg"
+        "flag": "flags/no.svg"
     },
     "NZ": {
         "id": "NZ",
         "name": "New Zealand",
-        "flag": "/flags/nz.svg"
+        "flag": "flags/nz.svg"
     },
     "PA": {
         "id": "PA",
         "name": "Panama",
-        "flag": "/flags/pa.svg"
+        "flag": "flags/pa.svg"
     },
     "PT": {
         "id": "PT",
         "name": "Portugal",
-        "flag": "/flags/pt.svg"
+        "flag": "flags/pt.svg"
     },
     "PY": {
         "id": "PY",
         "name": "Paraguay",
-        "flag": "/flags/py.svg"
+        "flag": "flags/py.svg"
     },
     "QA": {
         "id": "QA",
         "name": "Qatar",
-        "flag": "/flags/qa.svg"
+        "flag": "flags/qa.svg"
     },
     "SA": {
         "id": "SA",
         "name": "Saudi Arabia",
-        "flag": "/flags/sa.svg"
+        "flag": "flags/sa.svg"
     },
     "SE": {
         "id": "SE",
         "name": "Sweden",
-        "flag": "/flags/se.svg"
+        "flag": "flags/se.svg"
     },
     "SN": {
         "id": "SN",
         "name": "Senegal",
-        "flag": "/flags/sn.svg"
+        "flag": "flags/sn.svg"
     },
     "TN": {
         "id": "TN",
         "name": "Tunisia",
-        "flag": "/flags/tn.svg"
+        "flag": "flags/tn.svg"
     },
     "TR": {
         "id": "TR",
         "name": "Turkey",
-        "flag": "/flags/tr.svg"
+        "flag": "flags/tr.svg"
     },
     "US": {
         "id": "US",
         "name": "United States",
-        "flag": "/flags/us.svg"
+        "flag": "flags/us.svg"
     },
     "UY": {
         "id": "UY",
         "name": "Uruguay",
-        "flag": "/flags/uy.svg"
+        "flag": "flags/uy.svg"
     },
     "UZ": {
         "id": "UZ",
         "name": "Uzbekistan",
-        "flag": "/flags/uz.svg"
+        "flag": "flags/uz.svg"
     },
     "ZA": {
         "id": "ZA",
         "name": "South Africa",
-        "flag": "/flags/za.svg"
+        "flag": "flags/za.svg"
     },
     "TBD": {
         "id": "TBD",
         "name": "TBD",
-        "flag": "/flags/tbd.svg"
+        "flag": "flags/tbd.svg"
     }
 }
